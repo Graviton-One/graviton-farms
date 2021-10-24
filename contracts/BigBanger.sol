@@ -57,8 +57,6 @@ contract BigBanger is Ownable {
     }
     // The SUSHI TOKEN!
     RelictGton public relictGton;
-    // Dev address.
-    address public devaddr;
     // Block number when bonus SUSHI period ends.
     uint256 public bonusEndBlock;
     // SUSHI tokens created per block.
@@ -75,6 +73,9 @@ contract BigBanger is Ownable {
     uint256 public totalAllocPoint = 0;
     // The block number when SUSHI mining starts.
     uint256 public startBlock;
+    // minted amount of the relic token
+    uint public totalMinted;
+
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(
@@ -85,13 +86,11 @@ contract BigBanger is Ownable {
 
     constructor(
         RelictGton _relictGton,
-        address _devaddr,
         uint256 _rgPerBlock,
         uint256 _startBlock,
         uint256 _bonusEndBlock
     ) public {
         relictGton = _relictGton;
-        devaddr = _devaddr;
         rgPerBlock = _rgPerBlock;
         bonusEndBlock = _bonusEndBlock;
         startBlock = _startBlock;
@@ -228,7 +227,7 @@ contract BigBanger is Ownable {
             multiplier.mul(rgPerBlock).mul(pool.allocPoint).div(
                 totalAllocPoint
             );
-        relictGton.mint(devaddr, rgReward.div(10));
+        totalMinted += rgReward;
         relictGton.mint(address(this), rgReward);
         pool.accRelGtonPerShare = pool.accRelGtonPerShare.add(
             rgReward.mul(1e12).div(lpSupply)
@@ -295,9 +294,4 @@ contract BigBanger is Ownable {
         }
     }
 
-    // Update dev address by the previous dev.
-    function dev(address _devaddr) public {
-        require(msg.sender == devaddr, "dev: wut?");
-        devaddr = _devaddr;
-    }
 }

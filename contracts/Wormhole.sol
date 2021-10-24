@@ -44,13 +44,10 @@ contract Wormhole is IWormhole {
         emit SetPrice(_priceGton, priceRelicOld, _priceRelic);
     }
 
-    function calcAmountOut(uint amount) internal returns (uint) {
-        return priceGton / priceRelic * amount;
-    }
-
     function swap(uint amount) public override {
         require(gton.transferFrom(msg.sender, address(this), amount), "Not enought of allowed gton.");
-        uint amountOut = calcAmountOut(amount);
+        // the amount to recieve can be drived from the two constants, that sets the price relation
+        uint amountOut = priceGton / priceRelic * amount;
         gton.transferFrom(address(wallet), msg.sender, amountOut);
         emit Swap(msg.sender, msg.sender, amount, amountOut);
     }
