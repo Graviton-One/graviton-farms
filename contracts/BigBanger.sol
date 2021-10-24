@@ -3,9 +3,6 @@
 pragma solidity >=0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./RelictGtonToken.sol";
 
@@ -30,8 +27,6 @@ interface IMigratorBanger {
 //
 // Have fun reading it. Hopefully it's bug-free. God bless.
 contract BigBanger is Ownable {
-    using SafeMath for uint256;
-    using SafeERC20 for IERC20;
     // Info of each user.
     struct UserInfo {
         uint256 amount; // How many LP tokens the user has provided.
@@ -74,7 +69,7 @@ contract BigBanger is Ownable {
     // The block number when SUSHI mining starts.
     uint256 public startBlock;
     // minted amount of the relic token
-    uint public totalMinted;
+    uint256 public totalMinted;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -89,7 +84,7 @@ contract BigBanger is Ownable {
         uint256 _rgPerBlock,
         uint256 _startBlock,
         uint256 _bonusEndBlock
-    ) public {
+    ) {
         relictGton = _relictGton;
         rgPerBlock = _rgPerBlock;
         bonusEndBlock = _bonusEndBlock;
@@ -110,9 +105,10 @@ contract BigBanger is Ownable {
         if (_withUpdate) {
             massUpdatePools();
         }
-        uint256 lastRewardBlock =
-            block.number > startBlock ? block.number : startBlock;
-        totalAllocPoint = totalAllocPoint.add(_allocPoint);
+        uint256 lastRewardBlock = block.number > startBlock
+            ? block.number
+            : startBlock;
+        totalAllocPoint = totalAllocPoint + _allocPoint;
         poolInfo.push(
             PoolInfo({
                 lpToken: _lpToken,
@@ -132,15 +128,14 @@ contract BigBanger is Ownable {
         if (_withUpdate) {
             massUpdatePools();
         }
-        totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(
-            _allocPoint
-        );
+        totalAllocPoint =
+            totalAllocPoint -
+            poolInfo[_pid].allocPoint +
+            _allocPoint;
         poolInfo[_pid].allocPoint = _allocPoint;
     }
-    
-    function updateRGPerBlock(
-        uint256 _rgPerBlock
-    ) public onlyOwner {
+
+    function updateRGPerBlock(uint256 _rgPerBlock) public onlyOwner {
         rgPerBlock = _rgPerBlock;
     }
 
@@ -155,7 +150,7 @@ contract BigBanger is Ownable {
         PoolInfo storage pool = poolInfo[_pid];
         IERC20 lpToken = pool.lpToken;
         uint256 bal = lpToken.balanceOf(address(this));
-        lpToken.safeApprove(address(migrator), bal);
+        lpToken.approve(address(migrator), bal);
         IERC20 newLpToken = migrator.migrate(lpToken);
         require(bal == newLpToken.balanceOf(address(this)), "migrate: bad");
         pool.lpToken = newLpToken;
@@ -168,14 +163,14 @@ contract BigBanger is Ownable {
         returns (uint256)
     {
         if (_to <= bonusEndBlock) {
-            return _to.sub(_from).mul(BONUS_MULTIPLIER);
+            return (_to - _from) * BONUS_MULTIPLIER;
         } else if (_from >= bonusEndBlock) {
-            return _to.sub(_from);
+            return _to - _from;
         } else {
             return
-                bonusEndBlock.sub(_from).mul(BONUS_MULTIPLIER).add(
-                    _to.sub(bonusEndBlock)
-                );
+                (bonusEndBlock - _from) *
+                BONUS_MULTIPLIER +
+                (_to - bonusEndBlock);
         }
     }
 
@@ -190,17 +185,17 @@ contract BigBanger is Ownable {
         uint256 accRelGtonPerShare = pool.accRelGtonPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
-            uint256 multiplier =
-                getMultiplier(pool.lastRewardBlock, block.number);
-            uint256 sushiReward =
-                multiplier.mul(rgPerBlock).mul(pool.allocPoint).div(
-                    totalAllocPoint
-                );
-            accRelGtonPerShare = accRelGtonPerShare.add(
-                sushiReward.mul(1e12).div(lpSupply)
+            uint256 multiplier = getMultiplier(
+                pool.lastRewardBlock,
+                block.number
             );
+            uint256 sushiReward = (multiplier * rgPerBlock * pool.allocPoint) /
+                totalAllocPoint;
+            accRelGtonPerShare =
+                accRelGtonPerShare +
+                ((sushiReward * 1e12) / lpSupply);
         }
-        return user.amount.mul(accRelGtonPerShare).div(1e12).sub(user.rewardDebt);
+        return (user.amount * accRelGtonPerShare) / 1e12 - user.rewardDebt;
     }
 
     // Update reward vairables for all pools. Be careful of gas spending!
@@ -223,37 +218,36 @@ contract BigBanger is Ownable {
             return;
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-        uint256 rgReward =
-            multiplier.mul(rgPerBlock).mul(pool.allocPoint).div(
-                totalAllocPoint
-            );
+        uint256 rgReward = (multiplier * rgPerBlock * pool.allocPoint) /
+            totalAllocPoint;
         totalMinted += rgReward;
         relictGton.mint(address(this), rgReward);
-        pool.accRelGtonPerShare = pool.accRelGtonPerShare.add(
-            rgReward.mul(1e12).div(lpSupply)
-        );
+        pool.accRelGtonPerShare =
+            pool.accRelGtonPerShare +
+            ((rgReward * 1e12) / lpSupply);
         pool.lastRewardBlock = block.number;
     }
 
     // Deposit LP tokens to MasterChef for SUSHI allocation.
-    function deposit(uint256 _pid, uint256 _amount, address _user) public {
+    function deposit(
+        uint256 _pid,
+        uint256 _amount,
+        address _user
+    ) public {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
         updatePool(_pid);
         if (user.amount > 0) {
-            uint256 pending =
-                user.amount.mul(pool.accRelGtonPerShare).div(1e12).sub(
-                    user.rewardDebt
-                );
+            uint256 pending = user
+                .amount
+                * pool.accRelGtonPerShare
+                / 1e12
+                 - user.rewardDebt;
             safeRelictGtonTransfer(_user, pending);
         }
-        pool.lpToken.safeTransferFrom(
-            address(_user),
-            address(this),
-            _amount
-        );
-        user.amount = user.amount.add(_amount);
-        user.rewardDebt = user.amount.mul(pool.accRelGtonPerShare).div(1e12);
+        pool.lpToken.transferFrom(address(_user), address(this), _amount);
+        user.amount = user.amount + _amount;
+        user.rewardDebt = user.amount * pool.accRelGtonPerShare / 1e12;
         emit Deposit(_user, _pid, _amount);
     }
 
@@ -263,14 +257,15 @@ contract BigBanger is Ownable {
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
-        uint256 pending =
-            user.amount.mul(pool.accRelGtonPerShare).div(1e12).sub(
-                user.rewardDebt
-            );
+        uint256 pending = user
+            .amount
+            * pool.accRelGtonPerShare
+            / 1e12
+            - user.rewardDebt;
         safeRelictGtonTransfer(msg.sender, pending);
-        user.amount = user.amount.sub(_amount);
-        user.rewardDebt = user.amount.mul(pool.accRelGtonPerShare).div(1e12);
-        pool.lpToken.safeTransfer(address(msg.sender), _amount);
+        user.amount = user.amount - _amount;
+        user.rewardDebt = user.amount * pool.accRelGtonPerShare / 1e12;
+        pool.lpToken.transfer(address(msg.sender), _amount);
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
@@ -278,7 +273,7 @@ contract BigBanger is Ownable {
     function emergencyWithdraw(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        pool.lpToken.safeTransfer(address(msg.sender), user.amount);
+        pool.lpToken.transfer(address(msg.sender), user.amount);
         emit EmergencyWithdraw(msg.sender, _pid, user.amount);
         user.amount = 0;
         user.rewardDebt = 0;
@@ -293,5 +288,4 @@ contract BigBanger is Ownable {
             relictGton.transfer(_to, _amount);
         }
     }
-
 }

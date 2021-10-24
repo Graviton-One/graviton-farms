@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 //SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0;
 
@@ -9,8 +11,8 @@ contract Wormhole is IWormhole {
     uint public priceGton;
     uint public priceRelic;
 
-    IERC20 public wallet;
-    IERC20 public gton;
+    IERC20 public override wallet;
+    IERC20 public override gton;
 
     constructor (IERC20 _wallet, IERC20 _gton, uint _priceGton, uint _priceRelic) {
         owner = msg.sender;
@@ -31,7 +33,7 @@ contract Wormhole is IWormhole {
         emit SetOwner(ownerOld, _owner);
     }
 
-    function setWallet(IERC20 _wallet) public isOwner {
+    function setWallet(IERC20 _wallet) public override isOwner {
         address walletOld = address(wallet);
         wallet = _wallet;
         emit SetWallet(walletOld, address(_wallet));
