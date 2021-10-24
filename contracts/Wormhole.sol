@@ -12,6 +12,14 @@ contract Wormhole is IWormhole {
     IERC20 public wallet;
     IERC20 public gton;
 
+    constructor (IERC20 _wallet, IERC20 _gton, uint _priceGton, uint _priceRelic) {
+        owner = msg.sender;
+        wallet = _wallet;
+        gton = _gton;
+        priceGton = _priceGton;
+        priceRelic = _priceRelic;
+    }
+
     modifier isOwner() {
         require(msg.sender == owner, "Only owner allowed.");
         _;

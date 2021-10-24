@@ -11,14 +11,14 @@ contract Migrator {
     address public oldFactory;
     IUniswapV2Factory public factory;
     uint256 public notBeforeBlock;
-    uint256 public desiredLiquidity = uint256(-1);
+    uint256 public desiredLiquidity = type(uint256).max;
 
     constructor(
         address _chef,
         address _oldFactory,
         IUniswapV2Factory _factory,
         uint256 _notBeforeBlock
-    ) public {
+    ) {
         chef = _chef;
         oldFactory = _oldFactory;
         factory = _factory;
@@ -41,7 +41,7 @@ contract Migrator {
         orig.transferFrom(msg.sender, address(orig), lp);
         orig.burn(address(pair));
         pair.mint(msg.sender);
-        desiredLiquidity = uint256(-1);
+        desiredLiquidity = type(uint256).max;
         return pair;
     }
 }
