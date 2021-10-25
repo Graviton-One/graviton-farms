@@ -50,6 +50,8 @@ contract BigBanger is Ownable {
         uint256 allocPoint; // How many allocation points assigned to this pool. SUSHIs to distribute per block.
         uint256 lastRewardBlock; // Last block number that SUSHIs distribution occurs.
         uint256 accRelGtonPerShare; // Accumulated SUSHIs per share, times 1e12. See below.
+        uint256 totalFarmed;
+        uint256 totalLocked; 
     }
     // The SUSHI TOKEN!
     RelictGton public relictGton;
@@ -93,11 +95,10 @@ contract BigBanger is Ownable {
         startBlock = _startBlock;
     }
 
-    function getPoolData(uint index) public view returns (uint, uint, uint, uint) {
-        // alloc
-        // totalAllocPoints
-        // farmed
-        // locked
+    function getPoolData(uint _pid) public view returns (uint, uint, uint, uint, uint) {
+        PoolInfo storage pool = poolInfo[_pid];
+        uint mintForPool = rgPerBlock * pool.allocPoint / totalAllocPoint;
+        return (pool.allocPoint, totalAllocPoint, pool.totalFarmed, pool.totalLocked, mintForPool);
     }
 
     function poolLength() external view returns (uint256) {
@@ -123,7 +124,9 @@ contract BigBanger is Ownable {
                 lpToken: _lpToken,
                 allocPoint: _allocPoint,
                 lastRewardBlock: lastRewardBlock,
-                accRelGtonPerShare: 0
+                accRelGtonPerShare: 0,
+                totalLocked: 0,
+                totalFarmed: 0
             })
         );
     }
@@ -222,7 +225,7 @@ contract BigBanger is Ownable {
             return;
         }
         // TODO possible balanceOf violation
-        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
+        uint256 lpSupply = pool.totalLocked;
         if (lpSupply == 0) {
             pool.lastRewardBlock = block.number;
             return;
@@ -232,6 +235,7 @@ contract BigBanger is Ownable {
             totalAllocPoint;
         totalMinted += rgReward;
         relictGton.mint(address(this), rgReward);
+        pool.totalFarmed += rgReward;
         pool.accRelGtonPerShare =
             pool.accRelGtonPerShare +
             ((rgReward * 1e12) / lpSupply);
@@ -244,6 +248,7 @@ contract BigBanger is Ownable {
         require(_amount <= user.amount + user.accPendingReward, "BigBanger: Withdraw amount above the balance.");
         updatePool(_pid);
         relictGton.transfer(msg.sender, _amount);
+        emit Claim(msg.sender, _pid, _amount);
     }
 
     // Deposit LP tokens to MasterChef for SUSHI allocation.
@@ -264,6 +269,7 @@ contract BigBanger is Ownable {
             user.accPendingReward += pending;
         }
         pool.lpToken.transferFrom(address(_user), address(this), _amount);
+        pool.totalLocked += _amount;
         user.amount = user.amount + _amount;
         user.rewardDebt = user.amount * pool.accRelGtonPerShare / 1e12;
         emit Deposit(_user, _pid, _amount);
@@ -284,6 +290,7 @@ contract BigBanger is Ownable {
         user.amount = user.amount - _amount;
         user.rewardDebt = user.amount * pool.accRelGtonPerShare / 1e12;
         pool.lpToken.transfer(address(msg.sender), _amount);
+        pool.totalLocked -= _amount;
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
