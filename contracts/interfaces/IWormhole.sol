@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 
-//SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0;
 
 import "./IERC20.sol";
 
 interface IWormhole {
     function gton() external view returns (IERC20);
+
+    function gtonRelic() external view returns (IERC20);
 
     function wallet() external view returns (IERC20);
 

@@ -1,4 +1,5 @@
-//SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MIT
+
 pragma solidity >=0.8.0;
 
 import "./interfaces/IWormhole.sol";
@@ -11,11 +12,13 @@ contract Wormhole is IWormhole {
 
     IERC20 public override wallet;
     IERC20 public override gton;
+    IERC20 public override gtonRelic;
 
-    constructor (IERC20 _wallet, IERC20 _gton, uint _priceGton, uint _priceRelic) {
+    constructor (IERC20 _wallet, IERC20 _gton, IERC20 _gtonRelic, uint _priceGton, uint _priceRelic) {
         owner = msg.sender;
         wallet = _wallet;
         gton = _gton;
+        gtonRelic = _gtonRelic;
         priceGton = _priceGton;
         priceRelic = _priceRelic;
     }
@@ -45,7 +48,7 @@ contract Wormhole is IWormhole {
     }
 
     function swap(uint amount) public override {
-        require(gton.transferFrom(msg.sender, address(this), amount), "Not enought of allowed gton.");
+        require(gtonRelic.transferFrom(msg.sender, address(this), amount), "Not enought of allowed gton.");
         // the amount to recieve can be drived from the two constants, that sets the price relation
         uint amountOut = priceGton / priceRelic * amount;
         gton.transferFrom(address(wallet), msg.sender, amountOut);

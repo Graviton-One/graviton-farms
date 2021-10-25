@@ -12,8 +12,8 @@ describe("BigBanger", function () {
     this.minter = this.signers[4]
 
     this.BigBanger = await ethers.getContractFactory("BigBanger")
-    this.RelictGtonToken = await ethers.getContractFactory("RelictGtonToken")
     this.ERC20Mock = await ethers.getContractFactory("ERC20Mock", this.minter)
+    this.RelictGtonToken = await ethers.getContractFactory("RelictGtonToken")
   })
 
   beforeEach(async function () {

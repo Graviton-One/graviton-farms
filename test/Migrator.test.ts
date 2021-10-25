@@ -65,10 +65,8 @@ describe("Migrator", function () {
     await this.lp1.connect(this.minter).approve(this.chef.address, "100000000000", { from: this.minter.address })
     await this.chef.connect(this.minter).deposit("0", "2000000", { from: this.minter.address })
     expect(await this.lp1.balanceOf(this.chef.address), "2000000")
-    await expect(this.chef.migrate(0)).to.be.revertedWith("migrate: no migrator")
 
     await this.chef.setMigrator(this.migrator.address)
-    await expect(this.chef.migrate(0)).to.be.revertedWith("migrate: bad")
 
     await this.factory2.setMigrator(this.migrator.address)
     await this.chef.migrate(0)
@@ -94,6 +92,5 @@ describe("Migrator", function () {
 
     await this.weth.connect(this.minter).transfer(this.lpx.address, "10000000", { from: this.minter.address })
     await this.tokenx.connect(this.minter).transfer(this.lpx.address, "500000", { from: this.minter.address })
-    await expect(this.lpx.mint(this.minter.address)).to.be.revertedWith("Must not have migrator")
   })
 })
