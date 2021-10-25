@@ -26,7 +26,7 @@ library UniswapV2Library {
     ) internal pure returns (address pair) {
         (address token0, address token1) = sortTokens(tokenA, tokenB);
         pair = address(
-            uint256(
+            bytes20(
                 keccak256(
                     abi.encodePacked(
                         hex"ff",
