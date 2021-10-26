@@ -3,7 +3,7 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 
   const { deployer, dev } = await getNamedAccounts()
 
-  const sushi = await ethers.getContract("RelicGtonToken")
+  const sushi = await ethers.getContract("RelictGtonToken")
   
   const { address } = await deploy("BigBanger", {
     from: deployer,
@@ -27,4 +27,4 @@ module.exports = async function ({ ethers, deployments, getNamedAccounts }) {
 }
 
 module.exports.tags = ["BigBanger"]
-module.exports.dependencies = ["UniswapV2Factory", "UniswapV2Router02", "RelicGtonToken"]
+module.exports.dependencies = ["UniswapV2Factory", "UniswapV2Router02", "RelictGtonToken"]
