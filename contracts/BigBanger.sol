@@ -54,6 +54,7 @@ contract BigBanger is Ownable {
         uint256 allocPoint; // How many allocation points assigned to this pool. SUSHIs to distribute per block.
         uint256 lastRewardBlock; // Last block number that SUSHIs distribution occurs.
         uint256 accRelGtonPerShare; // Accumulated SUSHIs per share, times 1e12. See below.
+        uint256 totalRewardsUnlocked;
     }
     // The SUSHI TOKEN!
     RelictGton public relictGton;
@@ -119,7 +120,8 @@ contract BigBanger is Ownable {
                 lpToken: _lpToken,
                 allocPoint: _allocPoint,
                 lastRewardBlock: lastRewardBlock,
-                accRelGtonPerShare: 0
+                accRelGtonPerShare: 0,
+                totalRewardsUnlocked: 0
             })
         );
     }
