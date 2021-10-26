@@ -97,6 +97,10 @@ contract BigBanger is Ownable {
         bonusEndBlock = _bonusEndBlock;
         startBlock = _startBlock;
     }
+    
+    function getPoolData(uint256 farm_id) external view returns (uint256, uint256, uint256, uint256) {
+        return (poolInfo[farm_id].allocPoint,totalAllocPoint,poolInfo[farm_id].lpToken.balanceOf(address(this)),rgPerBlock);
+    }
 
     function poolLength() external view returns (uint256) {
         return poolInfo.length;

@@ -88,6 +88,10 @@ contract Wormhole {
     function calcAmountOut(uint amountIn) public view returns (uint amountOut) {
         return amountIn * num_up / num_down;
     }
+    
+    function getValues() public view returns (uint num1, uint num2) {
+        return (num_up, num_down);
+    }
 
     function convert(uint amount) public notReverted {
         require(relict.transferFrom(msg.sender, address(this), amount), "Not enought of allowed gton.");
