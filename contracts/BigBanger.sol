@@ -6,17 +6,12 @@ import "@openzeppelin/contracts@3.1.0/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts@3.1.0/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts@3.1.0/math/SafeMath.sol";
 import "@openzeppelin/contracts@3.1.0/access/Ownable.sol";
+import "./RelictGtonToken.sol";
 
 interface IMigratorBigBanger {
     function migrate(IERC20 token) external returns (IERC20);
 }
 
-interface RelictGton is ERC20 {
-    /// @notice Creates `_amount` token to `_to`. Must only be called by the owner (MasterChef).
-    function mint(address _to, uint256 _amount) public onlyOwner {
-        _mint(_to, _amount);
-    }
-}
 
 contract BigBanger is Ownable {
     using SafeMath for uint256;
@@ -33,7 +28,7 @@ contract BigBanger is Ownable {
         uint256 accRelictPerShare; // Accumulated SUSHIs per share, times 1e12. See below.
     }
     // The SUSHI TOKEN!
-    RelictGton public relict;
+    RelictGtonToken public relict;
     // Dev address.
     address public devaddr;
     // Block number when bonus SUSHI period ends.
@@ -43,7 +38,7 @@ contract BigBanger is Ownable {
     // Bonus muliplier for early sushi makers.
     uint256 public constant BONUS_MULTIPLIER = 10;
     // The migrator contract. It has a lot of power. Can only be set through governance (owner).
-    IMigratorChef public migrator;
+    IMigratorBigBanger public migrator;
     // Info of each pool.
     PoolInfo[] public poolInfo;
     // Info of each user that stakes LP tokens.
@@ -61,7 +56,7 @@ contract BigBanger is Ownable {
     );
 
     constructor(
-        RelictGton _relict,
+        RelictGtonToken _relict,
         address _devaddr,
         uint256 _relictPerBlock,
         uint256 _startBlock,
@@ -262,11 +257,11 @@ contract BigBanger is Ownable {
 
     // Safe sushi transfer function, just in case if rounding error causes pool to not have enough relicts.
     function safeRelictTransfer(address _to, uint256 _amount) internal {
-        uint256 relictBal = relictGtonToken.balanceOf(address(this));
+        uint256 relictBal = relict.balanceOf(address(this));
         if (_amount > relictBal) {
-            relictGtonToken.transfer(_to, relictBal);
+            relict.transfer(_to, relictBal);
         } else {
-            relictGtonToken.transfer(_to, _amount);
+            relict.transfer(_to, _amount);
         }
     }
 
