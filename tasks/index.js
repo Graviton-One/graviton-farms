@@ -199,7 +199,7 @@ task("migrate", "Migrates liquidity from Uniswap to SushiSwap")
 
 task("masterchef:add", "Add pool to masterchef")
 .setAction(async function (taskArguments, { ethers: { getNamedSigner } }, runSuper) {
-  const masterChef = await ethers.getContract("MasterChef")
+  const masterChef = await ethers.getContract("BigBanger")
 
   await (await masterChef.connect(await getNamedSigner("dev")).add(1000, '0x3e78a806b127c02b54419191571d9379819e989c', true)).wait()
 });
@@ -208,7 +208,7 @@ task("masterchef:deposit", "MasterChef deposit")
 .addParam("pid", "Pool ID")
 .addParam("amount", "Amount")
 .setAction(async function ({ pid, amount }, { ethers: { getNamedSigner } }, runSuper) {
-  const masterChef = await ethers.getContract("MasterChef")
+  const masterChef = await ethers.getContract("BigBanger")
 
   const { lpToken } = await masterChef.poolInfo(pid)
 
@@ -221,7 +221,7 @@ task("masterchef:withdraw", "MasterChef withdraw")
 .addParam("pid", "Pool ID")
 .addParam("amount", "Amount")
 .setAction(async function ({ pid, amount }, { ethers: { getNamedSigner } }, runSuper) {
-  const masterChef = await ethers.getContract("MasterChef")
+  const masterChef = await ethers.getContract("BigBanger")
 
   const { lpToken } = await masterChef.poolInfo(pid)
 
@@ -233,7 +233,7 @@ task("masterchef:withdraw", "MasterChef withdraw")
 task("bar:enter", "SushiBar enter")
 .addParam("amount", "Amount")
 .setAction(async function ({ amount }, { ethers: { getNamedSigner } }, runSuper) {
-  const sushi = await ethers.getContract("SushiToken")
+  const sushi = await ethers.getContract("RelictGton")
 
   const bar = await ethers.getContract("SushiBar")
 
@@ -245,7 +245,7 @@ task("bar:enter", "SushiBar enter")
 task("bar:leave", "SushiBar leave")
 .addParam("amount", "Amount")
 .setAction(async function ({ amount }, { ethers: { getNamedSigner } }, runSuper) {
-  const sushi = await ethers.getContract("SushiToken")
+  const sushi = await ethers.getContract("RelictGton")
 
   const bar = await ethers.getContract("SushiBar")
 
@@ -298,45 +298,3 @@ task("deploy:complex-rewarder", "Deploy ComplexRewarder")
     await (await complexRewarder.transferOwnership(dev, true, false)).wait();
   }
 });
-
-task("deploy:clone-rewarder", "Deploy CloneRewarder")
-.addParam("rewardToken", "Reward Token")
-.addParam("lpToken", "LP Token")
-.addOptionalParam("rewardRate", "Reward Rate", 0)
-.setAction(async function ({ rewardToken, lpToken, rewardRate }, { getChainId, deployments }, runSuper) {
-  const { deployer, dev } = await getNamedAccounts();
-  const { deploy } = deployments;
-
-  const chainId = await getChainId();
-
-  let miniChefAddress;
-
-  if (chainId === "31337") {
-    miniChefAddress = (await deployments.get("MiniChefV2")).address;
-  } else if (chainId in MINICHEF_ADDRESS) {
-    miniChefAddress = MINICHEF_ADDRESS[chainId];
-  } else {
-    throw Error("No MINICHEF!");
-  }
-
-  const { address } = await deploy("CloneRewarderTime", {
-    from: deployer,
-    args: [miniChefAddress],
-    log: true,
-    deterministicDeployment: false,
-  });
-
-  console.log(`CloneRewarder deployed at ${address}`)
-
-  const cloneRewarder = await ethers.getContract("CloneRewarderTime");
-
-  const data = defaultAbiCoder.encode(['address', 'address', 'uint256', 'address'], [rewardToken, dev, rewardRate, lpToken])
-
-  await (await cloneRewarder.init(data)).wait()
-  
-  if ((await complexRewarder.owner()) !== dev) {
-    console.log("Transfer ownership of CloneRewarderTime to dev");
-    await (await cloneRewarder.transferOwnership(dev, true, false)).wait();
-  }
-});
-

@@ -1,52 +1,29 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "./RelictGtonToken.sol";
+import "@openzeppelin/contracts@3.1.0/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts@3.1.0/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts@3.1.0/utils/EnumerableSet.sol";
+import "@openzeppelin/contracts@3.1.0/math/SafeMath.sol";
+import "@openzeppelin/contracts@3.1.0/access/Ownable.sol";
 
-interface IMigratorBanger {
-    // Perform LP token migration from legacy UniswapV2 to SushiSwap.
-    // Take the current LP token address and return the new LP token address.
-    // Migrator should have full access to the caller's LP token.
-    // Return the new LP token address.
-    //
-    // XXX Migrator must have allowance access to UniswapV2 LP tokens.
-    // SushiSwap must mint EXACTLY the same amount of SushiSwap LP tokens or
-    // else something bad will happen. Traditional UniswapV2 does not
-    // do that so be careful!
+interface IMigratorBigBanger {
     function migrate(IERC20 token) external returns (IERC20);
 }
 
-// MasterChef is the master of Sushi. He can make Sushi and he is a fair guy.
-//
-// Note that it's ownable and the owner wields tremendous power. The ownership
-// will be transferred to a governance smart contract once SUSHI is sufficiently
-// distributed and the community can show to govern itself.
-//
-// Have fun reading it. Hopefully it's bug-free. God bless.
+interface RelictGton is ERC20 {
+    /// @notice Creates `_amount` token to `_to`. Must only be called by the owner (MasterChef).
+    function mint(address _to, uint256 _amount) public onlyOwner {
+        _mint(_to, _amount);
+    }
+}
+
 contract BigBanger is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
-    // Info of each user.
     struct UserInfo {
         uint256 amount; // How many LP tokens the user has provided.
         uint256 rewardDebt; // Reward debt. See explanation below.
-        //
-        // We do some fancy math here. Basically, any point in time, the amount of SUSHIs
-        // entitled to a user but is pending to be distributed is:
-        //
-        //   pending reward = (user.amount * pool.accSushiPerShare) - user.rewardDebt
-        //
-        // Whenever a user deposits or withdraws LP tokens to a pool. Here's what happens:
-        //   1. The pool's `accSushiPerShare` (and `lastRewardBlock`) gets updated.
-        //   2. User receives the pending reward sent to his/her address.
-        //   3. User's `amount` gets updated.
-        //   4. User's `rewardDebt` gets updated.
     }
     // Info of each pool.
     struct PoolInfo {
@@ -66,7 +43,7 @@ contract BigBanger is Ownable {
     // Bonus muliplier for early sushi makers.
     uint256 public constant BONUS_MULTIPLIER = 10;
     // The migrator contract. It has a lot of power. Can only be set through governance (owner).
-    IMigratorBanger public migrator;
+    IMigratorChef public migrator;
     // Info of each pool.
     PoolInfo[] public poolInfo;
     // Info of each user that stakes LP tokens.
@@ -144,7 +121,7 @@ contract BigBanger is Ownable {
     }
 
     // Set the migrator contract. Can only be called by the owner.
-    function setMigrator(IMigratorBanger _migrator) public onlyOwner {
+    function setMigrator(IMigratorBigBanger _migrator) public onlyOwner {
         migrator = _migrator;
     }
 
@@ -179,7 +156,7 @@ contract BigBanger is Ownable {
     }
 
     // View function to see pending SUSHIs on frontend.
-    function pendingSushi(uint256 _pid, address _user)
+    function pendingRelict(uint256 _pid, address _user)
         external
         view
         returns (uint256)
@@ -191,12 +168,12 @@ contract BigBanger is Ownable {
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier =
                 getMultiplier(pool.lastRewardBlock, block.number);
-            uint256 sushiReward =
+            uint256 relictReward =
                 multiplier.mul(relictPerBlock).mul(pool.allocPoint).div(
                     totalAllocPoint
                 );
             accRelictPerShare = accRelictPerShare.add(
-                sushiReward.mul(1e12).div(lpSupply)
+                relictReward.mul(1e12).div(lpSupply)
             );
         }
         return user.amount.mul(accRelictPerShare).div(1e12).sub(user.rewardDebt);
@@ -244,7 +221,7 @@ contract BigBanger is Ownable {
                 user.amount.mul(pool.accRelictPerShare).div(1e12).sub(
                     user.rewardDebt
                 );
-            safeSushiTransfer(msg.sender, pending);
+            safeRelictTransfer(msg.sender, pending);
         }
         pool.lpToken.safeTransferFrom(
             address(msg.sender),
@@ -266,7 +243,7 @@ contract BigBanger is Ownable {
             user.amount.mul(pool.accRelictPerShare).div(1e12).sub(
                 user.rewardDebt
             );
-        safeSushiTransfer(msg.sender, pending);
+        safeRelictTransfer(msg.sender, pending);
         user.amount = user.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accRelictPerShare).div(1e12);
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
@@ -283,13 +260,13 @@ contract BigBanger is Ownable {
         user.rewardDebt = 0;
     }
 
-    // Safe sushi transfer function, just in case if rounding error causes pool to not have enough SUSHIs.
-    function safeSushiTransfer(address _to, uint256 _amount) internal {
-        uint256 relictBal = relict.balanceOf(address(this));
+    // Safe sushi transfer function, just in case if rounding error causes pool to not have enough relicts.
+    function safeRelictTransfer(address _to, uint256 _amount) internal {
+        uint256 relictBal = relictGtonToken.balanceOf(address(this));
         if (_amount > relictBal) {
-            relict.transfer(_to, relictBal);
+            relictGtonToken.transfer(_to, relictBal);
         } else {
-            relict.transfer(_to, _amount);
+            relictGtonToken.transfer(_to, _amount);
         }
     }
 

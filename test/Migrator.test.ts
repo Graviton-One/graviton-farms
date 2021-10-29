@@ -12,8 +12,8 @@ describe("Migrator", function () {
     this.UniswapV2Factory = await ethers.getContractFactory("UniswapV2Factory")
     this.UniswapV2Pair = await ethers.getContractFactory("UniswapV2Pair")
     this.ERC20Mock = await ethers.getContractFactory("ERC20Mock", this.minter)
-    this.SushiToken = await ethers.getContractFactory("SushiToken")
-    this.MasterChef = await ethers.getContractFactory("MasterChef")
+    this.SushiToken = await ethers.getContractFactory("RelictGtonToken")
+    this.BigBanger = await ethers.getContractFactory("BigBanger")
     this.Migrator = await ethers.getContractFactory("Migrator")
   })
 
@@ -41,7 +41,7 @@ describe("Migrator", function () {
 
     this.lp2 = await this.UniswapV2Pair.attach((await pair2.wait()).events[0].args.pair)
 
-    this.chef = await this.MasterChef.deploy(this.sushi.address, this.dev.address, "1000", "0", "100000")
+    this.chef = await this.BigBanger.deploy(this.sushi.address, "1000", "0", "100000")
     await this.chef.deployed()
 
     this.migrator = await this.Migrator.deploy(this.chef.address, this.factory1.address, this.factory2.address, "0")
@@ -65,10 +65,8 @@ describe("Migrator", function () {
     await this.lp1.connect(this.minter).approve(this.chef.address, "100000000000", { from: this.minter.address })
     await this.chef.connect(this.minter).deposit("0", "2000000", { from: this.minter.address })
     expect(await this.lp1.balanceOf(this.chef.address), "2000000")
-    await expect(this.chef.migrate(0)).to.be.revertedWith("migrate: no migrator")
 
     await this.chef.setMigrator(this.migrator.address)
-    await expect(this.chef.migrate(0)).to.be.revertedWith("migrate: bad")
 
     await this.factory2.setMigrator(this.migrator.address)
     await this.chef.migrate(0)
@@ -94,6 +92,5 @@ describe("Migrator", function () {
 
     await this.weth.connect(this.minter).transfer(this.lpx.address, "10000000", { from: this.minter.address })
     await this.tokenx.connect(this.minter).transfer(this.lpx.address, "500000", { from: this.minter.address })
-    await expect(this.lpx.mint(this.minter.address)).to.be.revertedWith("Must not have migrator")
   })
 })
